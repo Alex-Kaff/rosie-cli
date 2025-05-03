@@ -1,6 +1,6 @@
 {
   "name": "rosie-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered command-line interface tool that uses OpenAI's API to help you interact with your computer through natural language",
   "main": "dist/index.js",
   "bin": {
