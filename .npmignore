@@ -1,0 +1,39 @@
+# Source code (as it's compiled to dist/)
+src/
+
+# Development and test files
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+.github/
+.travis.yml
+.gitlab-ci.yml
+.circleci/
+
+# Configuration files that aren't needed in the package
+tsconfig.json
+.gitattributes
+.editorconfig
+.eslintrc
+.eslintignore
+.prettierrc
+.prettierignore
+.babelrc
+jest.config.js
+
+# Misc
+.DS_Store
+.env*
+*.log
+memory.json
+.idea/
+.vscode/
+.rosie-config.json
+.rosie-chat-history.json
+.rosie-memory.json
+node_modules/
+
+# Include dist folder (negate ignore)
+!dist/ 

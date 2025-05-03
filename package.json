@@ -1,7 +1,7 @@
 {
   "name": "rosie-cli",
   "version": "1.0.0",
-  "description": "A command-line interface tool named Rosie",
+  "description": "AI-powered command-line interface tool that uses OpenAI's API to help you interact with your computer through natural language",
   "main": "dist/index.js",
   "bin": {
     "rosie": "./dist/index.js"
@@ -10,14 +10,35 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint",
+    "lint": "echo \"No linting configured\" && exit 0",
+    "version": "npm run format && git add -A src",
+    "format": "echo \"No formatting configured\" && exit 0"
   },
   "keywords": [
     "cli",
-    "rosie"
+    "rosie",
+    "ai",
+    "assistant",
+    "openai",
+    "chatgpt",
+    "command-line"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/rosie-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/rosie-cli/issues"
+  },
+  "homepage": "https://github.com/yourusername/rosie-cli#readme",
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "@types/node": "^22.15.3",
     "commander": "^13.1.0",
@@ -27,5 +48,11 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.2"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

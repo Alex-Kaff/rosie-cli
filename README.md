@@ -16,7 +16,7 @@ Rosie is an AI-powered command-line interface tool built with TypeScript that us
 ### Global Installation
 
 ```bash
-npm install -g .
+npm install -g rosie-cli
 ```
 
 This will make the `rosie` command available globally.
