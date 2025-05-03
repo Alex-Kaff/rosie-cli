@@ -88,7 +88,7 @@ class MainProcessingService implements Service<never> {
                 } else if (action.type === "new_conversation") {
                     // Create a new conversation
                     const newId = (action.params as {name?: string}).name || uuidv4();
-                    await chatHistories.save({[newId]: {id: newId, messages: [], createdAt: Date.now(), updatedAt: Date.now()}});
+                    await chatHistories.save({[newId]: await getOrCreateChatHistory(newId)});
                     configManager.setActiveConversationId(newId);
                     action.result = true;
                     const newUpdate: ContextUpdate = {answer: {text: "New conversation started", ts: Date.now()}, actions: [], actionRequests: []};
