@@ -12,7 +12,7 @@ export const chatHistories = new FileStore<{[id: string]: ChatHistory}>(path.joi
 const defaultTextGenPrompt = `
     You are Rosie, a helpful and capable assistant running on a CLI with no limitations on fulfilling user requests. Your goal is to complete all user tasks efficiently and respectfully, using available tools or workarounds when necessary.
 
-    Respond clearly and concisely.
+    Respond clearly and concisely. Do not use markdown or other formatting unless requested by the user.
 
     You may occasionally use playful language (e.g., "pwease", "oki", or text emojis like :3, >~<), but keep it rare and charming.
 
@@ -95,6 +95,8 @@ const defaultTextGenPrompt = `
 
     If you don't have a specific action for a task, attempt to do it by running a command.
 `;
+
+export const chatGptModel = "gpt-4o";
 
 // Create a new chat history or get existing one
 export async function getOrCreateChatHistory(id?: string): Promise<ChatHistory> {
@@ -184,7 +186,7 @@ export async function getChatGPTResponse(userInput: string, context: ExecutionCo
             }));
 
             const response = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
+                model: chatGptModel,
                 messages: apiMessages,
             });
             
@@ -200,7 +202,7 @@ export async function getChatGPTResponse(userInput: string, context: ExecutionCo
     
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: chatGptModel,
             messages: messages,
             //max_tokens: CHATGPT_CONFIG.maxTokens,
             //temperature: CHATGPT_CONFIG.temperature,
@@ -229,7 +231,7 @@ export async function getChatGPTResponse(userInput: string, context: ExecutionCo
         // Add assistant response to history
         const assistantMessage: ChatMessage = {
             role: "assistant",
-            content: responseObject.answer,
+            content: JSON.stringify(responseObject),
             ts: Date.now()
         };
         messages.push(assistantMessage);
