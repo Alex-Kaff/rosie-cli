@@ -1,6 +1,6 @@
 {
   "name": "rosie-cli",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "AI-powered command-line interface tool that uses OpenAI's API to help you interact with your computer through natural language",
   "main": "dist/index.js",
   "bin": {
@@ -28,12 +28,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Alex-Kaff/rosie-ai/"
+    "url": "git+https://github.com/Alex-Kaff/rosie-cli/"
   },
   "bugs": {
-    "url": "https://github.com/Alex-Kaff/rosie-ai/issues"
+    "url": "https://github.com/Alex-Kaff/rosie-cli/issues"
   },
-  "homepage": "https://github.com/Alex-Kaff/rosie-ai/#readme",
+  "homepage": "https://github.com/Alex-Kaff/rosie-cli/#readme",
   "author": "",
   "license": "MIT",
   "engines": {
