@@ -32,7 +32,7 @@ export type ChatHistory = {
   updatedAt: number;
 } 
 
-export type ActionType = "produce_text" | "new_conversation" | "search_pc" | "add_memory" | "run_cmd" | "set_conversation";
+export type ActionType = "produce_text" | "new_conversation" | "search_pc" | "add_memory" | "run_cmd" | "set_conversation" | "gen_image" | "analyze_screen";
 
 export type ActionParams<T extends ActionType> = T extends "produce_text" ? {
   inputMessage: Input;
@@ -47,7 +47,13 @@ export type ActionParams<T extends ActionType> = T extends "produce_text" ? {
   cmd: string;
 } : T extends "set_conversation" ? {
   id: string;
-} : never;
+} : T extends "gen_image" ? {
+  prompt: string;
+  inputImages: string[];
+} : T extends "analyze_screen" ? {
+  prompt: string;
+  screenIndex: number;
+} :never;
 
 export type Action = {
   type: ActionType;

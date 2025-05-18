@@ -6,6 +6,8 @@ import path from 'path';
 import { memoryStore } from "../services/main";
 import { FileStore } from "./filestore";
 import os from 'os';
+import fs from 'fs/promises';
+import sharp from 'sharp';
 
 export const chatHistories = new FileStore<{[id: string]: ChatHistory}>(path.join(os.homedir(), '.rosie-chat-history.json'), {});
 
@@ -27,15 +29,18 @@ const defaultTextGenPrompt = `
     
     The actions you can include are:
 
-    - {type: "new_conversation", params: {name?: string}} - start a new fresh conversation. Can take an optional name from the user
-    - {type: "set_conversation", params: {id: string}} - continue another conversation. The id is provided by the user.
-    - {type: "search_pc", params: {query: string}} - search the pc for the query for any files or folders. Uses Everything CLI by VoidTools to search and supports all CLI options
-    - {type: "add_memory", params: {text: string}} - add a memory about the user. Use this to store important information about the user.
-    - {type: "run_cmd", params: {cmd: string}} - run any command on CLI. This is in windows environment, and tools supported include python, node, npm, etc.
+    - {type: "new_conversation", params: {name?: string}} - start a new fresh conversation. Can take an optional name from the user. By starting a new conversation, the current chat history with you and the user will be deleted, and a new one will start.
+    - {type: "search_pc", params: {query: string}} - search the pc for the query for any files or folders. Uses Everything CLI by VoidTools to search and supports all CLI options. Use this if the user asks you to find files or other content on their PC.
+    - {type: "add_memory", params: {text: string}} - add a memory about the user. Use this to store important information about the user. After a conversation is over (i.e by the user saying "thank you" or "bye"), you can use this to remember a quick summary of the conversation if it provides any interesting insights on the user that you believe you should remember.
+    - {type: "run_cmd", params: {cmd: string}} - run any command on CLI. This is in windows environment, and tools supported include python, node, npm, etc. Use this if the user asks you to do something that requires running a command on the PC. If the user asks you to do something that you cannot perform, use a command instead.
+    - {type: "gen_image", params: {prompt: string, inputImages?: string[]}} - generate an image based on the prompt. You can also pass paths to images that you want to use in your input if the user asks for it. Use this whenever the user asks you to generate any kind of image.
+    - {type: "analyze_screen", params: {prompt: string, screenIndex: number}} - analyze the screen at the given index. Use this whenever the user asks you to analyze the screen. The user may have multiple monitors, so the screen index must be provided. If it is not provided by the user, ask for it and call this action after they answer.
 
     Always include the relevant actionRequests if you say you're performing an action.
 
-    Do not mention an action unless it appears in the actionRequests field.
+    The actions will be performed in the order in which they appear inside the array.
+
+    In your answer field, do not mention an action unless it appears in the actionRequests field.
 
     If you're unsure which action to take, ask the user first.
 
@@ -83,6 +88,32 @@ const defaultTextGenPrompt = `
             "type": "run_cmd", 
             "params": {
                 "cmd": "node --version"
+            }
+        }]
+    }
+
+    Example 5 - Generating an image:
+    user: Can you create an image that combines logo.png and background.jpg from this folder?
+    you: {
+        "answer": "I'll generate a new image combining logo.png and background.jpg for you.",
+        "actionRequests": [{
+            "type": "gen_image", 
+            "params": {
+                "prompt": "Combine the logo and background image seamlessly",
+                "inputImages": ["logo.png", "background.jpg"]
+            }
+        }]
+    }
+
+    Example 6 - Analyzing user's screen:
+    user: What is in this image on screen 0?
+    you: {
+        "answer": "I'll analyze the screen for you.",
+        "actionRequests": [{
+            "type": "analyze_screen", 
+            "params": {
+                "prompt": "What is in this image?",
+                "screenIndex": 0
             }
         }]
     }
@@ -256,3 +287,109 @@ export async function getChatGPTResponse(userInput: string, context: ExecutionCo
         };
     }
 } 
+
+export async function generateImage(prompt: string, inputImages: string[], context: ExecutionContext): Promise<string> {
+    const client = new OpenAI({
+        apiKey: context.params.openAiKey
+    });
+    // Prepare input images if provided
+    const images :File[]= [];
+    
+    if (inputImages && inputImages.length > 0) {
+        for (const imagePath of inputImages) {
+            try {
+                // Read the image file
+                const imageBuffer = await fs.readFile(imagePath);
+                
+                // Convert to PNG for DALL-E 2 which only supports PNG format
+                const pngBuffer = await sharp(imageBuffer).toFormat('png').toBuffer();
+                
+                // Create a file-like object that satisfies the Uploadable type
+                const file = new File([pngBuffer], path.basename(imagePath).replace(/\.[^/.]+$/, '.png'), {
+                    type: "image/png" // Always use PNG mime type
+                });
+                images.push(file);
+            } catch (error) {
+                console.error(`Error loading/converting image ${imagePath}:`, error);
+                throw new Error(`Failed to load/convert image: ${imagePath}`);
+            }
+        }
+    }
+    try {
+        // Choose between generate and edit based on whether input images are provided
+        const response = images.length > 0 
+            ? await client.images.edit({
+                model: "dall-e-2",
+                image: images[0],
+                prompt: prompt,
+                n: 1,
+                size: "1024x1024",
+                response_format: "b64_json",
+              })
+            : await client.images.generate({
+                model: "dall-e-3",
+                prompt: prompt,
+                n: 1,
+                size: "1024x1024",
+                response_format: "b64_json",
+                quality: "standard",
+              });
+
+        // Extract the base64 image data from the response
+        if (response.data && response.data.length > 0 && response.data[0].b64_json) {
+            return `${response.data[0].b64_json}`;
+        } else {
+            throw new Error("No image data received from OpenAI");
+        }
+    } catch (error) {
+        console.error("Error generating image with OpenAI:", error);
+        throw new Error(`Failed to generate image: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
+
+export async function analyzeImage(imageBuffer: Buffer, prompt: string, context: ExecutionContext): Promise<string> {
+    const client = new OpenAI({
+        apiKey: context.params.openAiKey
+    });
+    
+    try {
+        // Process image with sharp to optimize size if needed
+        // This is important for large images as there are API size limits
+        const processedImageBuffer = await sharp(imageBuffer)
+            .resize(1500, 1500, { fit: 'inside', withoutEnlargement: true }) // Resize if too large
+            .toFormat('jpeg', { quality: 85 }) // Use JPEG for better compression
+            .toBuffer();
+            
+        // Convert to base64
+        const base64Image = processedImageBuffer.toString('base64');
+        // Create the API request with the image
+        const response = await client.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "user", 
+                    content: [
+                        { type: "text", text: prompt },
+                        {
+                            type: "image_url",
+                            image_url: {
+                                url: `data:image/jpeg;base64,${base64Image}`
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens: 5000
+        });
+
+        if (response.choices && response.choices.length > 0 && response.choices[0].message.content) {
+            return response.choices[0].message.content;
+        } else {
+            throw new Error("No analysis data received from OpenAI");
+        }
+    } catch (error) {
+        console.error("Error analyzing image with OpenAI:", error);
+        throw new Error(`Failed to analyze image: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
+

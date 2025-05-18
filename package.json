@@ -1,13 +1,13 @@
 {
   "name": "rosie-cli",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "AI-powered command-line interface tool that uses OpenAI's API to help you interact with your computer through natural language",
   "main": "dist/index.js",
   "bin": {
     "rosie": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-assets",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "test": "echo \"No tests\" && exit 0",
@@ -15,7 +15,8 @@
     "prepublishOnly": "npm run lint",
     "lint": "echo \"No linting configured\" && exit 0",
     "version": "npm run format && git add -A src",
-    "format": "echo \"No formatting configured\" && exit 0"
+    "format": "echo \"No formatting configured\" && exit 0",
+    "copy-assets": "node scripts/copy-assets.js"
   },
   "keywords": [
     "cli",
@@ -41,8 +42,10 @@
   },
   "dependencies": {
     "@types/node": "^22.15.3",
+    "@types/sharp": "^0.31.1",
     "commander": "^13.1.0",
     "openai": "^4.97.0",
+    "sharp": "^0.34.1",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0"
   },

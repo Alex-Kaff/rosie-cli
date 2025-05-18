@@ -10,6 +10,8 @@ Rosie is an AI-powered command-line interface tool built with TypeScript that us
 - Run system commands through AI assistance
 - Store and retrieve memories about user preferences
 - Support for multiple conversations with conversation management
+- Generate images using AI based on text prompts
+- Analyze screen content through screenshots
 
 ## Installation
 
@@ -18,6 +20,11 @@ Rosie is an AI-powered command-line interface tool built with TypeScript that us
 ```bash
 npm install -g rosie-cli
 ```
+
+### Installing required dependencies
+Python:
+- mss ``pip install mss``
+
 
 This will make the `rosie` command available globally.
 
@@ -59,6 +66,12 @@ rosie Start a new conversation
 
 # Switch to a specific conversation
 rosie Switch to conversation [conversation_id]
+
+# Generate an image
+rosie Create an image of a sunset over mountains
+
+# Analyze what's on your screen
+rosie What's currently on my screen?
 ```
 
 ### Configuration
@@ -89,6 +102,7 @@ The configuration is stored in `~/.rosie-config.json` and conversation history i
 
 - Node.js v14 or later
 - For file search functionality: [Everything](https://www.voidtools.com/) search tool installed (Windows only)
+- Python for screenshot capabilities
 
 ## License
 

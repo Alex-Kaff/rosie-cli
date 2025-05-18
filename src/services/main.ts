@@ -1,6 +1,6 @@
 import { Answer, ContextUpdate, Input, Action, Memory } from "../types/";
 import { Service } from "../types/service";
-import { chatHistories, getChatGPTResponse, getOrCreateChatHistory } from "../lib/chatgpt";
+import { analyzeImage, chatHistories, generateImage, getChatGPTResponse, getOrCreateChatHistory } from "../lib/chatgpt";
 import { ExecutionContext } from "../types/executionContext";
 import { searchEverything } from "../lib/everything";
 import { FileStore } from "../lib/filestore";
@@ -11,7 +11,8 @@ import os from "os";
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigManager } from "../configManager";
 import fs from 'fs';
-
+import fsPromises from 'fs/promises';
+import { getScreenshots } from "../lib/screenshot/screenshot";
 export const memoryStore = new FileStore<Memory>(path.join(os.homedir(), '.rosie-memory.json'), {items: []});
 
 const configManager = new ConfigManager();
@@ -99,6 +100,40 @@ class MainProcessingService implements Service<never> {
                     action.result = true;
                     const newUpdate: ContextUpdate = {answer: {text: "Conversation set to " + (action.params as {id: string}).id, ts: Date.now()}, actions: [], actionRequests: []};
                     return newUpdate;
+                } else if (action.type === "gen_image") {
+                    // Generate an image
+                    const image = await generateImage((action.params as {prompt: string, inputImages: string[]}).prompt, (action.params as {prompt: string, inputImages: string[]}).inputImages, context);
+                    // Save the base64 image to a file and open it with native image viewer
+                    const tempDir = os.tmpdir();
+                    const imagePath = path.join(tempDir, `rosie-image-${Date.now()}.png`);
+                    
+                    try {
+                        // Convert base64 to buffer and save to file
+                        const imageBuffer = Buffer.from(image, 'base64');
+                        await fsPromises.writeFile(imagePath, imageBuffer);
+                        
+                        // Open the image with the default image viewer
+                        const openCommand = process.platform === 'win32' 
+                            ? `start "" "${imagePath}"` 
+                            : process.platform === 'darwin' 
+                                ? `open "${imagePath}"` 
+                                : `xdg-open "${imagePath}"`;
+                        
+                        exec(openCommand, (error) => {
+                            if (error) {
+                                console.error('Error opening image:', error);
+                            }
+                        });
+                        
+                    } catch (error) {
+                        console.error('Error saving or opening image:', error);
+                    }
+                    action.result = "Image generated successfully. Path: " + imagePath;
+                } else if (action.type === "analyze_screen") {
+                    // Analyze the screen
+                    const screenshot = await getScreenshots();
+                    const result = await analyzeImage(screenshot[(action.params as any).screenIndex].buffer, (action.params as any).prompt, context);
+                    action.result = result;
                 }
             }
 

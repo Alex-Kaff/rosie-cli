@@ -16,8 +16,8 @@ import { ConfigManager } from './configManager';
 import MainProcessingService from './services/main';
 import { ExecutionContext } from './types/executionContext';
 import { v4 as uuidv4 } from 'uuid';
-import { exec } from 'child_process';
-
+import { getScreenshots } from './lib/screenshot/screenshot';
+import { analyzeImage } from './lib/chatgpt';
 // Generate a session ID for this CLI instance
 // This will remain the same for the duration of the CLI window
 
@@ -117,6 +117,20 @@ program
         } else {
             console.log('No OpenAI API key provided. Use --open_ai_key or run "rosie config --set-openai-key=YOUR_KEY"');
         }
+    });
+
+program
+    .command('test')
+    .description('Test command that does nothing')
+    .action(async () => {
+        const screenshots = await getScreenshots();
+        console.log(screenshots);
+        const imageBuffer = screenshots[0].buffer;
+        const prompt = "What is in this image?";
+        const ctx = new ExecutionContext(uuidv4());
+        ctx.params.openAiKey = configManager.getOpenAIKey();
+        const result = await analyzeImage(imageBuffer, prompt, ctx);
+        console.log(result);
     });
 
 // Parse command line arguments
